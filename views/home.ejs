@@ -1,9 +1,11 @@
 <%-include('partials/header')-%>
     <%posts.forEach(post => {%>
         <h1><%=post.title%></h1>
-        <p><%=post.content%></p>
-        <%if(post.title!=="Home"){%>
-            <a href="posts/<%=post.link%>">read more</a>
+        <%if(post.title==="Home"){%>
+            <p><%=post.content%></p>
+        <%}else{%>
+            <p><%=post.content.substring(0, 100) + " ..."%></p>
+            <a href="/posts/<%=post._id%>">Read More</a>
         <%}%>
     <%});%>
 

@@ -3,6 +3,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+const mongoose = require("mongoose");
 var _ = require('lodash');
 
 const homeStartingContent =
@@ -12,20 +13,30 @@ const aboutContent =
 const contactContent =
   "Scelerisque eleifend donec pretium vulputate sapien. Rhoncus urna neque viverra justo nec ultrices. Arcu dui vivamus arcu felis bibendum. Consectetur adipiscing elit duis tristique. Risus viverra adipiscing at in tellus integer feugiat. Sapien nec sagittis aliquam malesuada bibendum arcu vitae. Consequat interdum varius sit amet mattis. Iaculis nunc sed augue lacus. Interdum posuere lorem ipsum dolor sit amet consectetur adipiscing elit. Pulvinar elementum integer enim neque. Ultrices gravida dictum fusce ut placerat orci nulla. Mauris in aliquam sem fringilla ut morbi tincidunt. Tortor posuere ac ut consequat semper viverra nam libero.";
 
-
+mongoose.connect("mongodb+srv://admin-nikhil:test098@cluster0-coazq.mongodb.net/blogDb?retryWrites=true&w=majority",{useNewUrlParser:true})
 const app = express();
-  
-const posts = [{
-  title : "Home",
-  content : homeStartingContent,
-  link : ""
-}];
+
+
+const blogSchema = {
+  title : String,
+  content : String,
+  link : String
+};
+
+const Post = mongoose.model("Post",blogSchema);
 
 let flag =0;
 app.set("view engine", "ejs");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
+
+  // const defaultPost = new Post({
+  //   title : "Home",
+  //   content : homeStartingContent,
+  //   link : ""
+  // });
+  // defaultPost.save();
 
 
 function truncate(message) {
@@ -35,30 +46,26 @@ function truncate(message) {
 }
 
 app.get("/", function(req, res) {
-  res.render("home", {
-    posts: posts
-
+  Post.find({},function(err,post){
+    res.render("home", {
+      posts: post
+    });
   });
 });
 
 app.get("/posts/:postId",function(req,res) {
-  posts.forEach(function(post){
-    const storedTitle = post.title;
-      if(_.lowerCase(storedTitle) === _.lowerCase(req.params.postId))
-    {
-      console.log("found ");
-      flag=1;
+  const reqId = req.params.postId;
+  Post.findOne({_id:reqId},function(err,post){
+    if(!err){
       res.render("post",{
-        title : storedTitle,
-        content: post.content
-      });
+      title : post.title,
+      content: post.content
+    });
     }
+    
   });
-  if(flag===0){
-    console.log("Not found");
-    res.redirect("/");
-  }   
-});
+  });
+
 
 app.get("/about", function(req, res) {
   res.render("about", {
@@ -76,13 +83,17 @@ app.get("/compose",function (req,res) {
 });
 
 app.post("/compose",function (req,res) {
-  const post ={
+  const post =new Post({
     title : req.body.content_title,
-    content : truncate(req.body.content),
+    content : req.body.content,
     link : _.trim(req.body.content_title)
-  };
-  posts.push(post);
-  res.redirect("/");
+  });
+  post.save(function(err){
+    if (!err){
+      res.redirect("/");
+    }
+  });
+ 
 });
 
 app.listen(3000, function() {
